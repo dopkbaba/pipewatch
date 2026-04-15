@@ -1,43 +1,50 @@
-"""Pluggable backend registry for pipewatch metric sources."""
+"""Backend registry for pipewatch."""
 
-from pipewatch.backends.base import BackendBase, BackendError, PipelineMetrics
-from pipewatch.backends.memory import MemoryBackend
+from __future__ import annotations
 
-_REGISTRY: dict[str, type[BackendBase]] = {
-    "memory": MemoryBackend,
-}
+from typing import Dict, Type
+
+from pipewatch.backends.base import BackendBase
+
+_REGISTRY: Dict[str, Type[BackendBase]] = {}
 
 
-def register_backend(name: str, cls: type[BackendBase]) -> None:
-    """Register a custom backend under *name* for use with get_backend()."""
-    if not issubclass(cls, BackendBase):
-        raise TypeError(f"{cls} must subclass BackendBase.")
+def register_backend(name: str, cls: Type[BackendBase]) -> None:
+    """Register a backend class under *name*."""
     _REGISTRY[name] = cls
 
 
-def get_backend(name: str, **kwargs) -> BackendBase:
+def get_backend(name: str, **kwargs: object) -> BackendBase:
     """Instantiate and return a registered backend by name.
 
-    Args:
-        name: The registered backend identifier (e.g. ``"memory"``).
-        **kwargs: Keyword arguments forwarded to the backend constructor.
+    Parameters
+    ----------
+    name:
+        The backend identifier (e.g. ``"memory"``, ``"file"``)
+    **kwargs:
+        Constructor arguments forwarded to the backend class.
 
-    Raises:
-        KeyError: If *name* is not a registered backend.
+    Raises
+    ------
+    KeyError
+        If *name* has not been registered.
     """
     if name not in _REGISTRY:
-        available = ", ".join(sorted(_REGISTRY))
+        available = ", ".join(sorted(_REGISTRY)) or "<none>"
         raise KeyError(
             f"Unknown backend {name!r}. Available backends: {available}"
         )
-    return _REGISTRY[name](**kwargs)
+    return _REGISTRY[name](**kwargs)  # type: ignore[arg-type]
 
 
-__all__ = [
-    "BackendBase",
-    "BackendError",
-    "PipelineMetrics",
-    "MemoryBackend",
-    "register_backend",
-    "get_backend",
-]
+def available_backends() -> list[str]:
+    """Return a sorted list of registered backend names."""
+    return sorted(_REGISTRY.keys())
+
+
+# Register built-in backends
+from pipewatch.backends.memory import MemoryBackend  # noqa: E402
+from pipewatch.backends.file import FileBackend  # noqa: E402
+
+register_backend("memory", MemoryBackend)
+register_backend("file", FileBackend)
