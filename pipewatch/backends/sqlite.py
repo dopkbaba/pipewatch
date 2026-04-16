@@ -42,7 +42,12 @@ class SqliteBackend(BackendBase):
     def _parse_ts(value: Optional[str]) -> Optional[datetime]:
         if not value:
             return None
-        dt = datetime.fromisoformat(value)
+        try:
+            dt = datetime.fromisoformat(value)
+        except ValueError as exc:
+            raise ValueError(
+                f"Invalid ISO-8601 timestamp in database: {value!r}"
+            ) from exc
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt
