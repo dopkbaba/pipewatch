@@ -24,6 +24,17 @@ class PipelineMetrics:
             f"last_run={self.last_run}, row_count={self.row_count})"
         )
 
+    def is_healthy(self, max_error_rate: float = 0.05) -> bool:
+        """Return True if the pipeline appears healthy based on available metrics.
+
+        A pipeline is considered healthy when its error rate is below the given
+        threshold (defaults to 5%). If no error rate is recorded, the check is
+        skipped and True is returned.
+        """
+        if self.error_rate is not None and self.error_rate > max_error_rate:
+            return False
+        return True
+
 
 class BackendBase(ABC):
     """Abstract base class that all pipewatch backends must implement."""
