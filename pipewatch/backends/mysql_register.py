@@ -11,12 +11,23 @@ def _factory(config: Dict[str, Any]):
 
     Supported keys (all optional, fall back to driver defaults):
         host, port, user, password, database, table
+
+    Raises:
+        ValueError: If ``port`` is present but cannot be converted to an integer.
     """
     from pipewatch.backends.mysql import MySQLBackend
 
+    port_raw = config.get("port", 3306)
+    try:
+        port = int(port_raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"Invalid value for MySQL 'port': {port_raw!r}. Expected an integer."
+        ) from exc
+
     return MySQLBackend(
         host=config.get("host", "localhost"),
-        port=int(config.get("port", 3306)),
+        port=port,
         user=config.get("user", "root"),
         password=config.get("password", ""),
         database=config.get("database", "pipewatch"),
