@@ -24,7 +24,20 @@ def _factory(config: dict[str, Any]) -> SqliteBackend:
     db_path = config.get("db_path")
     if not db_path:
         raise ValueError("SqliteBackend requires 'db_path' in config")
-    return SqliteBackend(db_path=Path(db_path))
+
+    db_path = Path(db_path)
+
+    if db_path.suffix != ".db":
+        raise ValueError(
+            f"SqliteBackend 'db_path' should have a '.db' extension, got: '{db_path.suffix}'"
+        )
+
+    if not db_path.parent.exists():
+        raise ValueError(
+            f"SqliteBackend 'db_path' parent directory does not exist: '{db_path.parent}'"
+        )
+
+    return SqliteBackend(db_path=db_path)
 
 
 register_backend("sqlite", _factory)
