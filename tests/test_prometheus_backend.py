@@ -47,6 +47,11 @@ class TestPrometheusBackendListPipelines:
             with pytest.raises(ConnectionError, match="503"):
                 backend.list_pipelines()
 
+    def test_empty_metrics_returns_empty_list(self, backend):
+        with patch("requests.get", return_value=_mock_response("")):
+            ids = backend.list_pipelines()
+        assert ids == []
+
 
 class TestPrometheusBackendFetch:
     def test_returns_metrics_for_known_pipeline(self, backend):
