@@ -49,18 +49,27 @@ class HttpBackend(BackendBase):
             last_error=data.get("last_error"),
         )
 
+    def _get(self, url: str) -> requests.Response:
+        """Perform a GET request and raise a descriptive error on failure."""
+        try:
+            response = requests.get(url, headers=self.headers, timeout=self.timeout)
+            response.raise_for_status()
+        except requests.exceptions.Timeout as exc:
+            raise TimeoutError(f"Request to {url!r} timed out after {self.timeout}s") from exc
+        except requests.exceptions.HTTPError as exc:
+            raise RuntimeError(
+                f"HTTP {response.status_code} error fetching {url!r}: {response.text[:200]}"
+            ) from exc
+        return response
+
     # ------------------------------------------------------------------
     # BackendBase interface
     # ------------------------------------------------------------------
 
     def fetch(self, pipeline_id: str) -> PipelineMetrics:
         url = f"{self.base_url}/pipelines/{pipeline_id}"
-        response = requests.get(url, headers=self.headers, timeout=self.timeout)
-        response.raise_for_status()
-        return self._parse_metrics(response.json())
+        return self._parse_metrics(self._get(url).json())
 
     def list_pipelines(self) -> List[str]:
         url = f"{self.base_url}/pipelines"
-        response = requests.get(url, headers=self.headers, timeout=self.timeout)
-        response.raise_for_status()
-        return [item["id"] for item in response.json()]
+        return [item["id"] for item in self._get(url).json()]
