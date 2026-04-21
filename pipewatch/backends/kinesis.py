@@ -45,15 +45,25 @@ class KinesisBackend(BackendBase):
 
     def _refresh(self) -> None:
         client = self._connect()
-        shards = client.list_shards(StreamName=self._stream_name).get("Shards", [])
+        try:
+            shards = client.list_shards(StreamName=self._stream_name).get("Shards", [])
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to list shards for stream '{self._stream_name}': {exc}"
+            ) from exc
         for shard in shards:
             shard_id = shard["ShardId"]
-            iterator = client.get_shard_iterator(
-                StreamName=self._stream_name,
-                ShardId=shard_id,
-                ShardIteratorType=self._iterator_type,
-            )["ShardIterator"]
-            records = client.get_records(ShardIterator=iterator, Limit=100)["Records"]
+            try:
+                iterator = client.get_shard_iterator(
+                    StreamName=self._stream_name,
+                    ShardId=shard_id,
+                    ShardIteratorType=self._iterator_type,
+                )["ShardIterator"]
+                records = client.get_records(ShardIterator=iterator, Limit=100)["Records"]
+            except Exception as exc:
+                raise RuntimeError(
+                    f"Failed to read records from shard '{shard_id}': {exc}"
+                ) from exc
             for record in records:
                 try:
                     data = json.loads(record["Data"])
