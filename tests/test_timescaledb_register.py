@@ -28,3 +28,13 @@ def test_factory_passes_custom_config():
     assert "5433" in backend._dsn
     assert "etl" in backend._dsn
     assert backend._table == "metrics"
+
+
+def test_factory_uses_default_dsn_components():
+    """Verify that omitting host/port/dbname falls back to expected DSN defaults."""
+    from pipewatch.backends.timescaledb import TimescaleDBBackend
+    backend = get_backend("timescaledb", {})
+    assert isinstance(backend, TimescaleDBBackend)
+    # Default connection parameters should point to localhost on the standard port.
+    assert "localhost" in backend._dsn
+    assert "5432" in backend._dsn
