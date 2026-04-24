@@ -1,20 +1,28 @@
-"""Register the Datadog backend with pipewatch's backend registry."""
+"""Register the Datadog backend under the 'datadog' key."""
 from __future__ import annotations
 
 from typing import Any, Dict
 
 from pipewatch.backends import register_backend
+from pipewatch.backends.datadog import DatadogBackend
+
+_DEFAULTS: Dict[str, Any] = {
+    "base_url": "https://api.datadoghq.com",
+    "api_key": "",
+    "app_key": "",
+    "metric_prefix": "pipewatch",
+    "timeout": 10,
+}
 
 
-def _factory(config: Dict[str, Any]):
-    from pipewatch.backends.datadog import DatadogBackend
-
+def _factory(config: Dict[str, Any]) -> DatadogBackend:
+    merged = {**_DEFAULTS, **config}
     return DatadogBackend(
-        api_key=config["api_key"],
-        app_key=config["app_key"],
-        metric_prefix=config.get("metric_prefix", "pipewatch"),
-        host=config.get("host", "https://api.datadoghq.com/api/v1"),
-        timeout=int(config.get("timeout", 10)),
+        base_url=merged["base_url"],
+        api_key=merged["api_key"],
+        app_key=merged["app_key"],
+        metric_prefix=merged["metric_prefix"],
+        timeout=int(merged["timeout"]),
     )
 
 
